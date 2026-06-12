@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
-
+#include <stdio.h>
 #include "movegen.h"
 #include "board.h"
 #include "playmove.h"
@@ -20,11 +20,11 @@ bool isFree(char board[8][8], int targetRank, int targetFile ) {
         return true;
     }
 }
-bool pawnmove(bool* ctp, int* totMov, struct move legalMoves[256], int pInd, int pcolour, char type, int rank, int file, char board[8][8], int length,  int rdir, int fdir, int step) {
+bool pawnmove(bool* ctp, int* totMov, struct move legalMoves[256], int pInd, int pcolour, char type, int rank, int file, char board[8][8], int length,  int rdir, int fdir, int step, struct move* playedMoves) {
     /*
      Checks if a pawn move is legal,
      including captures. Any found move
-     is added to legal moves.
+     is added to Moves.
      */
 
     int targetRank = rank + rdir*step;
@@ -44,33 +44,45 @@ bool pawnmove(bool* ctp, int* totMov, struct move legalMoves[256], int pInd, int
 
     if (isFree(board, targetRank, targetFile) && fdir == 0) {
         
-        moveupdates(legalMoves, totMov, rank, file, pInd, pcolour, rank + step * rdir, file + step * fdir, 0);
-        return pawnmove(ctp, totMov, legalMoves, pInd, pcolour, type, rank, file, board, length, rdir, fdir, step+1);
+        moveupdates(legalMoves, totMov, rank, file, pInd, pcolour, rank + step * rdir, file + step * fdir, 0, type);
+        return pawnmove(ctp, totMov, legalMoves, pInd, pcolour, type, rank, file, board, length, rdir, fdir, step+1, playedMoves);
     }
 
     else if (!isFree(board, targetRank, targetFile)) {
         if (pcolour) {
             if (fdir != 0 && isupper(board[targetRank-1][targetFile-1])) {
 
-                        moveupdates(legalMoves, totMov, rank, file, pInd, pcolour, targetRank, targetFile, 1);
-                        return false;
+                 moveupdates(legalMoves, totMov, rank, file, pInd, pcolour, targetRank, targetFile, 1, type);
+                 return false;
             }
         }
         else {
             if (fdir != 0 && islower(board[targetRank-1][targetFile-1])) {
 
-                        moveupdates(legalMoves, totMov, rank, file, pInd, pcolour, targetRank, targetFile, 1);
-                        return false;
+                 moveupdates(legalMoves, totMov, rank, file, pInd, pcolour, targetRank, targetFile, 1, type);
+                 return false;
             }
         }   
     }
+    // en passant check
+    if (pcolour) {
+           if (playedMoves[0].pieceType == 'P' && (playedMoves[0].targetRank - playedMoves[0].startRank == -2) && playedMoves[0].targetRank == rank && playedMoves[0].targetFile == file + fdir && fdir != 0) {
+                
+                specialmoveupdates(legalMoves, totMov, rank, file, pInd, pcolour, targetRank, targetFile, 1, type, 1);
+                return false; 
+        }
+    }  
+    else if (playedMoves[0].pieceType == 'p' && (playedMoves[0].targetRank - playedMoves[0].startRank == 2) && playedMoves[0].targetRank == rank && playedMoves[0].targetFile == file + fdir && fdir != 0) {
+            specialmoveupdates(legalMoves, totMov, rank, file, pInd, pcolour, targetRank, targetFile, 1, type, 1);
+                return false;
+        } 
     return false; 
 }
 
 
 
 
-bool knightmove(int* totMov, struct move legalMoves[256], int pInd, int pcolour, int rank, int file, char board[8][8], int rdir, int fdir) {
+bool knightmove(int* totMov, struct move legalMoves[256], int pInd, int pcolour, int rank, int file, char board[8][8], int rdir, int fdir, char type) {
     /*
      Check if a knight move is possible,
      including captures. If so, it adds to 
@@ -87,20 +99,22 @@ bool knightmove(int* totMov, struct move legalMoves[256], int pInd, int pcolour,
     }
 
     if (isFree(board, targetRank, targetFile)) {
-        moveupdates(legalMoves, totMov, rank, file, pInd, pcolour, targetRank, targetFile, 0);
+        moveupdates(legalMoves, totMov, rank, file, pInd, pcolour, targetRank, targetFile, 0, type);
         return true;
     }
     
-    else if (pcolour) {
-        if (isupper(board[targetRank-1][targetFile-1])) {
-            moveupdates(legalMoves, totMov, rank, file, pInd, pcolour, targetRank, targetFile, 1);
-        }
-    }
     else {
-        if (islower(board[targetRank-1][targetFile-1])) {
+        if (pcolour) {
+            if (isupper(board[targetRank-1][targetFile-1])) {
+                moveupdates(legalMoves, totMov, rank, file, pInd, pcolour, targetRank, targetFile, 1, type);
+            }
+        }
+        else {
+            if (islower(board[targetRank-1][targetFile-1])) {
 
-            moveupdates(legalMoves, totMov, rank, file, pInd, pcolour, targetRank, targetFile, 1);
-            return false;
+                moveupdates(legalMoves, totMov, rank, file, pInd, pcolour, targetRank, targetFile, 1, type);
+                return false;
+            }
         }
     }
     return false;
@@ -132,21 +146,21 @@ bool legalMove(bool* ctp, int* totMov, struct move legalMoves[256], int pInd, in
 
     if (isFree(board, targetRank, targetFile)) {
         
-        moveupdates(legalMoves, totMov, rank, file, pInd, pcolour, rank + step * rdir, file + step * fdir, 0);
+        moveupdates(legalMoves, totMov, rank, file, pInd, pcolour, rank + step * rdir, file + step * fdir, 0, type);
         return legalMove(ctp, totMov, legalMoves, pInd, pcolour, type, rank, file, board, length, rdir, fdir, step+1);
     }
 
     else if (pcolour) {
         if (isupper(board[targetRank-1][targetFile-1])) {
 
-                    moveupdates(legalMoves, totMov, rank, file, pInd, pcolour, targetRank, targetFile, 1);
+                    moveupdates(legalMoves, totMov, rank, file, pInd, pcolour, targetRank, targetFile, 1, type);
                     return false;
         }
     }
     else {
         if (islower(board[targetRank-1][targetFile-1])) {
 
-                    moveupdates(legalMoves, totMov, rank, file, pInd, pcolour, targetRank, targetFile, 1);
+                    moveupdates(legalMoves, totMov, rank, file, pInd, pcolour, targetRank, targetFile, 1, type);
                     return false;
         }
     }
@@ -154,7 +168,7 @@ bool legalMove(bool* ctp, int* totMov, struct move legalMoves[256], int pInd, in
 }
 
 
-void moveChecker(bool* ctp, int* totMov, struct move legalMoves[256], int pInd, int pcolour, char type, int rank, int file, char board[8][8]) {
+void moveChecker(bool* ctp, int* totMov, struct move legalMoves[256], int pInd, int pcolour, char type, int rank, int file, char board[8][8], struct move* playedMoves) {
 
     
     /*
@@ -166,26 +180,26 @@ void moveChecker(bool* ctp, int* totMov, struct move legalMoves[256], int pInd, 
     if(type == 'p' || type == 'P') {
         if(pcolour) {
             if(rank == 2 ) { // 2 steps from first rank
-                pawnmove(ctp, totMov, legalMoves, pInd, pcolour, type, rank, file, board, 2, +1, 0, 1); 
+                pawnmove(ctp, totMov, legalMoves, pInd, pcolour, type, rank, file, board, 2, +1, 0, 1, playedMoves); 
             }
             else {    
-                pawnmove(ctp, totMov, legalMoves, pInd, pcolour, type, rank, file, board, 1, +1, 0, 1); 
+                pawnmove(ctp, totMov, legalMoves, pInd, pcolour, type, rank, file, board, 1, +1, 0, 1, playedMoves); 
             }
             // pawn captures
-            pawnmove(ctp, totMov, legalMoves, pInd, pcolour, type, rank, file, board, 1, 1, 1, 1);
-            pawnmove(ctp, totMov, legalMoves, pInd, pcolour, type, rank, file, board, 1, 1, -1, 1);
+            pawnmove(ctp, totMov, legalMoves, pInd, pcolour, type, rank, file, board, 1, 1, 1, 1, playedMoves);
+            pawnmove(ctp, totMov, legalMoves, pInd, pcolour, type, rank, file, board, 1, 1, -1, 1, playedMoves);
 
         }
         else {
              if(rank == 7 ) { // 2 steps from first rank
-                pawnmove(ctp, totMov, legalMoves, pInd, pcolour, type, rank, file, board, 2, -1, 0, 1); 
+                pawnmove(ctp, totMov, legalMoves, pInd, pcolour, type, rank, file, board, 2, -1, 0, 1, playedMoves); 
             }
             else {    
-                pawnmove(ctp, totMov, legalMoves, pInd, pcolour, type, rank, file, board, 1, -1, 0, 1); 
+                pawnmove(ctp, totMov, legalMoves, pInd, pcolour, type, rank, file, board, 1, -1, 0, 1, playedMoves); 
             }
             // pawn captures
-            pawnmove(ctp, totMov, legalMoves, pInd, pcolour, type, rank, file, board, 1, -1, 1, 1);
-            pawnmove(ctp, totMov, legalMoves, pInd, pcolour, type, rank, file, board, 1, -1, -1, 1);
+            pawnmove(ctp, totMov, legalMoves, pInd, pcolour, type, rank, file, board, 1, -1, 1, 1, playedMoves);
+            pawnmove(ctp, totMov, legalMoves, pInd, pcolour, type, rank, file, board, 1, -1, -1, 1, playedMoves);
 
         } 
     }
@@ -219,7 +233,7 @@ void moveChecker(bool* ctp, int* totMov, struct move legalMoves[256], int pInd, 
         int fdirs[8] = { 1, -1, 1, -1, 2, 2, -2, -2};
 
         for (int k = 0; k < 8; k++) {
-            knightmove(totMov, legalMoves, pInd, pcolour, rank, file, board, rdirs[k], fdirs[k]);
+            knightmove(totMov, legalMoves, pInd, pcolour, rank, file, board, rdirs[k], fdirs[k], type);
         }
     }
     if (type == 'k' || type == 'K') {
@@ -231,7 +245,7 @@ void moveChecker(bool* ctp, int* totMov, struct move legalMoves[256], int pInd, 
         }
     }
 }
-void AllLegalMoves(bool* ctp, int* totMov, struct move legalMoves[256], struct piece wPieces[16], struct piece bPieces[16], char board[8][8]) {
+void AllMoves(bool* ctp, int* totMov, struct move legalMoves[256], struct piece wPieces[16], struct piece bPieces[16], char board[8][8], struct move* playedMoves) {
     /* 
      Iterates over each piece,
      and calls moveChecker for each piece,
@@ -250,7 +264,7 @@ void AllLegalMoves(bool* ctp, int* totMov, struct move legalMoves[256], struct p
                 file = wPieces[i].file;
                 pieceInd = i;
                 pcolour = 1;
-                moveChecker(ctp, totMov, legalMoves, pieceInd, pcolour, type, rank, file, board); 
+                moveChecker(ctp, totMov, legalMoves, pieceInd, pcolour, type, rank, file, board, playedMoves); 
             }
         }
     }
@@ -262,7 +276,7 @@ void AllLegalMoves(bool* ctp, int* totMov, struct move legalMoves[256], struct p
                 file = bPieces[i].file;
                 pieceInd = i;
                 pcolour = 0;
-                moveChecker(ctp, totMov, legalMoves, pieceInd, pcolour, type, rank, file, board); 
+                moveChecker(ctp, totMov, legalMoves, pieceInd, pcolour, type, rank, file, board, playedMoves); 
             }
         }
     }

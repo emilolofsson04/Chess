@@ -11,7 +11,6 @@ void printAllMoves(struct move legalMoves[256], int* totMov) {
       Prints all possible moves if prompted
      */
     char newmove[5]; 
-    printf("Playable moves: ");
     for (int i = 0; i < *totMov; i++) {
         newmove[0] = legalMoves[i].startFile +'a' -1;
         newmove[1] = legalMoves[i].startRank + '0';
@@ -20,5 +19,4 @@ void printAllMoves(struct move legalMoves[256], int* totMov) {
         newmove[4] = '\0';
         printf("%s, ", newmove);
     }
-    printf("FF.\n");
 }

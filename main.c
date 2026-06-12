@@ -18,11 +18,13 @@ int main() {
     
     int iteration = 0;  // Keeps track of amount of turns
     int *it = &iteration; 
-   
+    
+    struct move playedMoves[256];
+
     while(game) {
        bool *ctp = &colour; // "color to play"
        bool *agame = &game; // active game
-       turn(ctp, agame, move, board, whitePieces, blackPieces, it); // One turn
+       turn(ctp, agame, move, board, whitePieces, blackPieces, it, playedMoves); // One turn
     }
     
     return 0;

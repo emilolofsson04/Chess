@@ -17,8 +17,11 @@ struct move {
     int targetRank;
     int targetFile;
     int pieceIndex;
+    int pieceType;
     int colour;
     int capture;
+    int capturedIndex;
+    int captureType;
 };     
  
 #endif

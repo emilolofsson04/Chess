@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -g
 
-SOURCES = main.c board.c initialize.c kingsafety.c movegen.c playmove.c printAllMoves.c turn.c
+SOURCES = main.c board.c initialize.c kingsafety.c movegen.c playmove.c printAllMoves.c turn.c verifylegality.c unplaymove.c
 TARGET = chess
 
 OBJ_DIR = obj

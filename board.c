@@ -55,5 +55,4 @@ void updateboard(char board[8][8], struct piece wPieces[16], struct piece bPiece
             board[rank][file] = bPieces[i].type;
         }
     }
-    printBoard(board);
 }

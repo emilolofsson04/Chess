@@ -76,9 +76,34 @@ bool knightThreat(char board[8][8], int rank, int file, int pcolour, int rdir, i
     }
     return true; 
 }
+bool pawnThreat(char board[8][8], int rank, int file, int pcolour, int rdir, int fdir) {
+    int targetRank = rank + rdir;
+    int targetFile = file + fdir;
+
+   
+    if (targetFile > 8 || targetFile < 1) {
+        return true;
+    }
+    if (targetRank > 8 || targetRank < 1) {
+        return true;
+    }
+ 
+    if (pcolour) {
+        if (board[targetRank-1][targetFile-1] == 'P') {
+            return false;
+        }
+    }
+    else {
+        if (board[targetRank-1][targetFile-1] == 'p') {
+            return false;
+        }
+    
+    }
+    return true; 
+}
 bool isKingSafe(char board[8][8], int rank, int file, int pcolour) {
     /*
-     Evaluates if the king is unde threat from opposig pieces
+     Evaluates if the king is under threat from opposig pieces
      */ 
     int rdirs[8] = { 1, -1, 0, 0, 1, 1, -1, -1};
     int fdirs[8] = { 0, 0, 1, -1, 1, -1, -1, 1};
@@ -98,16 +123,24 @@ bool isKingSafe(char board[8][8], int rank, int file, int pcolour) {
         }
     }
     if (pcolour) {
-        if (board[rank][file-2] == 'P' || board[rank][file] == 'P') {
-            return false;
+        int rrdirs[2] = {1, 1};
+        int ffdirs[2] = {-1, +1};
+        for (int k = 0; k < 2; k++) {
+            if(!pawnThreat(board, rank, file, pcolour, rrdirs[k], ffdirs[k])) {
+                return false;
+            }
         }
+ 
     }
     else {
-        if (board[rank-2][file-2] == 'p' || board[rank-2][file] == 'p') {
-            return false;
+        int rrdirs[2] = {-1, -1};
+        int ffdirs[2] = {-1, +1};
+        for (int k = 0; k < 2; k++) {
+            if(!pawnThreat(board, rank, file, pcolour, rrdirs[k], ffdirs[k])) {
+                return false;
+            }
         }
-    
+ 
     }
-   return true;
-
+    return true;
 }
